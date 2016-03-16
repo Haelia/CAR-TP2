@@ -29,7 +29,6 @@ public class Config {
 	 * de ressource REST.
 	 */
 	protected void addResources(List<Object> resources) {
-		resources.add(new HelloWorldResource());
 		resources.add(new Ressources());
 	}
 

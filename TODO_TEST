@@ -1,0 +1,25 @@
+- Déclarer CAF
+- Acheter Lunette
+- Inscription Conduite
+
+
+- Gèrer la view
+- Gestion Assets
+- Sons
+- Jeu en réseau
+
+Changer les textures en fonction des marées : Appliquer un filtre pour foncer la case
+Gérer les window.loseFocus()
+
+Demander à Arnaud, pourquoi peut pas utiliser références au lieu de shared pointeurs dans pawns
+
+pourquoi peut pas foreach dans constructeur de pawns
+
+vérifier la gestion du temps pour les rotate et translate
+
+Empêcher clic quand déplacement en cours
+
+Quand ne peut pas aller sur une case, empêcher l’animation
+animer sprite que quand moving
+cell detention click -> flash blanc
+Méthode can move

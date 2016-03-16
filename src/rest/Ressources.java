@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.ConnectException;
-import java.net.SocketException;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -27,14 +25,11 @@ public class Ressources {
 	private FTPClient client;
 	private String host;
 	private int port;
-	private String username;
-	private String password;
+	private boolean authentified = false;
 
 	public Ressources() {
 		this.host = Constants.host;
 		this.port = Constants.port;
-		this.username = Constants.username;
-		this.password = Constants.password;
 
 		FTPClientConfig conf = new FTPClientConfig(FTPClientConfig.SYST_UNIX);
 		conf.setServerLanguageCode(FTPClientConfig.SYST_UNIX);
@@ -43,41 +38,69 @@ public class Ressources {
 		client.configure(conf);
 	}
 
-	private void connecter() {
+	public boolean isAuthentified() {
+		return authentified;
+	}
+
+	@GET
+	@Produces("text/html; charset=UTF-8")
+	@Path("")
+	public String login() {
+		String html = "<h3>Login</h3>";
+
+		html += "<div>";
+		html += "<form method='POST' action='" + url + "/connexion' enctype='multipart/form-data'>\n";
+		html += "<input type='text' name='username' /><br>\n";
+		html += "<input type='password' name='password' /><br>\n";
+		html += "<input type='submit' value='Connexion'>\n";
+		html += "</form> ";
+		html += "</div>";
+
+		return html;
+	}
+
+	@POST
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
+	@Produces("text/html; charset=UTF-8")
+	@Path("/connexion")
+	public String connexion(@Multipart("username") String username, @Multipart("password") String password)
+			throws IOException {
+
 		try {
 			client.connect(host, port);
-			client.login(username, password);
+			this.authentified = client.login(username, password);
 
-			if (!client.isConnected()) {
-				throw new ConnectException("Utilisateur non connecte");
+			if (isAuthentified()) {
+			return "<h3>Connecté</h3></br><a href='" + url + "/list'>Aller au répertoire du serveur FTP</a>";
 			}
 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+
+		client.disconnect();
+		return "<h3>Erreur d'authentification</h3>";
 	}
 
 	@GET
 	@Produces("application/octet-stream")
-	@Path("/get/{path}")
+	@Path("/get{path : (/path)?}")
 	public File get(@PathParam("path") String path) {
 		File file = null;
 
-		try {
-			connecter();
+		if (isAuthentified()) {
+			try {
+				String[] paths = path.split("/");
+				String filename = paths[paths.length - 1];
 
-			String[] paths = path.split("/");
-			String filename = paths[paths.length - 1];
+				file = new File(filename);
+				FileOutputStream output = new FileOutputStream(file);
 
-			file = new File(filename);
-			FileOutputStream output = new FileOutputStream(file);
-
-			client.retrieveFile(path, output);
-			output.close();
-
-			client.disconnect();
-		} catch (Exception e) {
-			e.printStackTrace();
+				client.retrieveFile(path, output);
+				output.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 
 		return file;
@@ -87,13 +110,12 @@ public class Ressources {
 	@Produces("text/html")
 	@Path("/list{folder_path : (/folder_path)?}")
 	public String list(@PathParam("folder_path") String folderPath) {
-		System.out.println();
 		FTPFile[] ftpFiles = null;
 
-		try {
-			connecter();
+		String html = "";
 
-			if (client.isConnected()) {
+		if (isAuthentified()) {
+			try {
 				if (folderPath != null) {
 					ftpFiles = client.listFiles(folderPath);
 					folderPath += "/";
@@ -102,42 +124,43 @@ public class Ressources {
 					folderPath = "";
 				}
 
-				client.disconnect();
-			}
-		} catch (final Exception e) {
-			e.printStackTrace();
-		}
-
-		String html = "<ul>";
-
-		for (FTPFile file : ftpFiles) {
-			String cmd;
-			String filename = file.getName();
-			if (file.isDirectory()) {
-				cmd = "/list/";
-				filename += "/";
-			} else {
-				cmd = "/get/";
+			} catch (final Exception e) {
+				e.printStackTrace();
 			}
 
-			html += "<li>";
-			html += "<a href=" + url + cmd + folderPath + file.getName() + ">" + filename + "</a>";
-			html += " ";
-			html += "<a href=" + url + "/delete/" + folderPath +
-			file.getName() + ">" + "Delete" + "</a>";
-			html += "</li>";
+			html += "<ul>";
+
+			for (FTPFile file : ftpFiles) {
+				String cmd;
+				String filename = file.getName();
+				if (file.isDirectory()) {
+					cmd = "/list/";
+					filename += "/";
+				} else {
+					cmd = "/get/";
+				}
+
+				html += "<li>";
+				html += "<a href='" + url + cmd + folderPath + file.getName() + "'>" + filename + "</a>";
+				html += " ";
+
+				if (!file.isDirectory())
+					html += "<a href='" + url + "/delete/" + folderPath + file.getName() + "'>" + "Delete" + "</a>";
+
+				html += "</li>";
+			}
+
+			html += "</ul>";
+
+			html += "<div>";
+			html += "<form method='POST' action='" + url + "/upload' enctype='multipart/form-data'>\n";
+			html += "Fichier<input type='file' name='file'><br>";
+			html += "nom : <input type='hidden' name='path' value='" + folderPath + "'>";
+			html += "<input type='text' name='name' /><br>\n";
+			html += "<input type='submit' value='Envoyer'>\n";
+			html += "</form> ";
+			html += "</div>";
 		}
-
-		html += "</ul>";
-
-		html += "<div>";
-		html += "<form method='POST' action='" + url + "/upload' enctype='multipart/form-data'>\n";
-		html += "Fichier<input type='file' name='file'><br>";
-		html += "nom : <input type='hidden' name='path' value=''>";
-		html += "<input type='text' name='name' /><br>\n";
-		html += "<input type='submit' value='Envoyer'>\n";
-		html += "</form> ";
-		html += "</div>";
 
 		return html;
 	}
@@ -148,38 +171,32 @@ public class Ressources {
 	@Path("/upload")
 	public String upload(@Multipart("file") InputStream fichier, @Multipart("name") String name,
 			@Multipart("path") String path) throws IOException {
+		String html = "";
 
-		connecter();
-		System.out.println("coucou");
-
-		if (client.isConnected()) {
-			if(path != null) {
-				path += "/";
-			}
-			System.out.println("Name : " + name);
-			System.out.println("Fichier : " + fichier);
-			client.storeFile(path + "/" + name, fichier);
-			client.disconnect();
+		if (isAuthentified()) {
+			client.storeFile(path + name, fichier);
+			html = "<h3>Fichier importé</h3>";
 		}
-		return "<h3>Fichier importé</h3>";
+
+		return html;
 	}
 
 	@GET
 	@Produces("text/html; charset=UTF-8")
-	@Path("/delete/{filepath}")
+	@Path("/delete{filepath : (/filepath)?}")
 	public String deleteFile(@PathParam("filepath") String filepath) {
+		String html = "";
 
-		connecter();
-
-		if (client.isConnected()) {
+		if (isAuthentified()) {
 			try {
 				client.deleteFile(filepath);
-				client.disconnect();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+
+			html = "<h3>Fichier supprimé</h3>";
 		}
 
-		return "<h3>Fichier supprimé</h3>";
+		return html;
 	}
 }
