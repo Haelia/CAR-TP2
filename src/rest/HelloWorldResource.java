@@ -6,9 +6,9 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 
 /**
- * Exemple de ressource REST accessible a l'adresse :
+ * Exemple de ressource PasserelolREST accessible a l'adresse :
  * 
- * 		http://localhost:8080/rest/tp2/helloworld
+ * http://localhost:8080/rest/tp2/helloworld
  * 
  * @author Lionel Seinturier <Lionel.Seinturier@univ-lille1.fr>
  */
@@ -21,16 +21,15 @@ public class HelloWorldResource {
 		return "<h1>Hello World</h1>";
 	}
 
-	 @GET
-	 @Path("/book/{isbn}")
-	 public String getBook( @PathParam("isbn") String isbn ) {
-		 return "Book: "+isbn;		 
-	 }
+	@GET
+	@Path("/book/{isbn}")
+	public String getBook(@PathParam("isbn") String isbn) {
+		return "Book: " + isbn;
+	}
 
-	 @GET
-	 @Path("{var: .*}/stuff")
-	 public String getStuff( @PathParam("var") String stuff ) {
-		 return "Stuff: "+stuff;
-	 }
+	@GET
+	@Path("{var: .*}/stuff")
+	public String getStuff(@PathParam("var") String stuff) {
+		return "Stuff: " + stuff;
+	}
 }
-

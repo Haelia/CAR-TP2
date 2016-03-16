@@ -17,8 +17,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 
 /**
- * Configuration de l'application.
- * Declaration des classes de ressource REST.
+ * Configuration de l'application. Declaration des classes de ressource REST.
  * 
  * @author Lionel Seinturier <Lionel.Seinturier@univ-lille1.fr>
  */
@@ -26,40 +25,40 @@ import org.springframework.context.annotation.DependsOn;
 public class Config {
 
 	/**
-	 * Declaration des classes de ressource REST.
-	 * Ajouter une ligne par classe de ressource REST.
+	 * Declaration des classes de ressource REST. Ajouter une ligne par classe
+	 * de ressource REST.
 	 */
-	protected void addResources( List<Object> resources ) {
-		resources.add( new HelloWorldResource() );
-		// resources.add( new MaClasseDeResource() );
+	protected void addResources(List<Object> resources) {
+		resources.add(new HelloWorldResource());
+		resources.add(new Ressources());
 	}
-	
+
 	/**
 	 * Configuration au demarrage.
 	 */
-	@Bean @DependsOn( "cxf" )
+	@Bean
+	@DependsOn("cxf")
 	public Server jaxRsServer() {
 
-		JAXRSServerFactoryBean factory =
-			RuntimeDelegate.getInstance().createEndpoint(
-				new JaxRsApiApplication(), JAXRSServerFactoryBean.class );
-		
+		JAXRSServerFactoryBean factory = RuntimeDelegate.getInstance().createEndpoint(new JaxRsApiApplication(),
+				JAXRSServerFactoryBean.class);
+
 		List<Object> serviceBeans = new ArrayList<Object>();
 		addResources(serviceBeans);
-		
+
 		factory.setServiceBeans(serviceBeans);
-		factory.setAddress( "/" + factory.getAddress() );
-		factory.setProviders( Arrays.<Object>asList( new JacksonJsonProvider() ) );
+		factory.setAddress("/" + factory.getAddress());
+		factory.setProviders(Arrays.<Object> asList(new JacksonJsonProvider()));
 		return factory.create();
 	}
 
 	/**
 	 * Operations a effectuer lors de l'arret.
 	 */
-	@Bean( destroyMethod = "shutdown" )
+	@Bean(destroyMethod = "shutdown")
 	public SpringBus cxf() {
 		return new SpringBus();
-	}	
+	}
 }
 
 @ApplicationPath("tp2")

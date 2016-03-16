@@ -1,1 +1,1 @@
-http://localhost:8080/rest/tp2/helloworld
+http://localhost:8080/rest/tp2/commandes/list
